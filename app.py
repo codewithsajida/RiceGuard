@@ -112,6 +112,9 @@ def signup_page():
             st.error("Username already exists!")
         else:
             st.session_state.user_data[username] = password
+            # Save to permanent JSON
+            with open("user_data.json", "w") as f:
+                json.dump(st.session_state.user_data, f)
             st.success("Signup successful! You can now login.")
 
 def login_page():
@@ -123,6 +126,8 @@ def login_page():
             st.session_state.logged_in = True
             st.session_state.username = username
             st.success("Login successful!")
+            st.experimental_rerun = lambda: None  # Avoid old rerun
+            st.stop()  # Stop execution to refresh session
         else:
             st.error("Invalid username or password!")
 
@@ -136,7 +141,12 @@ def main():
     if "username" not in st.session_state:
         st.session_state.username = ""
     if "user_data" not in st.session_state:
-        st.session_state.user_data = {}
+        # Load permanent JSON if exists
+        if os.path.exists("user_data.json"):
+            with open("user_data.json", "r") as f:
+                st.session_state.user_data = json.load(f)
+        else:
+            st.session_state.user_data = {}
 
     # ---------------- Sidebar Account ----------------
     st.sidebar.title("🌾 RiceGuard Account")
@@ -153,7 +163,8 @@ def main():
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.experimental_rerun()
+        st.success("Logged out successfully. Please refresh the page to login again.")
+        st.stop()
 
     # ---------------- Navigation ----------------
     app_mode = st.sidebar.radio("Navigate", ["Home", "Disease Detection", "Gallery", "About Us"])
